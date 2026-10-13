@@ -1,0 +1,19 @@
+{
+  "flask": {
+    "host": "127.0.0.1",
+    "port": 5000
+  },
+  "core": {
+    "host": "127.0.0.1",
+    "port": 5001,
+    "project_dir": "ui/KNP.Server",
+    "startup_timeout_sec": 60,
+    "health_poll_sec": 0.5
+  },
+  "data": {
+    "root": "data",
+    "info": "data/info",
+    "state": "data/state",
+    "logs": "data/logs"
+  }
+}

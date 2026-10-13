@@ -1,0 +1,21 @@
+@inject KnpSession Session
+
+<MudThemeProvider Theme="_theme" IsDarkMode="_isDark" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@ChildContent
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private MudTheme _theme = ThemePalettes.Purple;
+    private bool _isDark = true;
+
+    protected override void OnInitialized()
+    {
+        _isDark = Session.Theme != "light";
+        _theme = ThemePalettes.For(Session.Accent);
+    }
+}

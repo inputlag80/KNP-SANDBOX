@@ -1,0 +1,76 @@
+@page "/"
+@rendermode InteractiveServer
+@inject KnpSession Session
+@inject TrainingLoop Loop
+@inject IJSRuntime JS
+@implements IDisposable
+
+<ThemeWrapper>
+    <ErrorBoundary @ref="_errorBoundary">
+        <ChildContent>
+            <MudLayout>
+                <MudAppBar Elevation="0" Color="Color.Dark" Dense="true">
+                    <MudText Typo="Typo.h6">🧪 KNP Sandbox</MudText>
+                    <MudSpacer />
+                    <MudChip T="string" Size="Size.Small"
+                             Style="@(Loop.IsRunning
+                                ? "background:#10b981;color:#04120a;font-weight:700;letter-spacing:0.5px"
+                                : "background:#3f3f46;color:#e4e4e7;font-weight:700;letter-spacing:0.5px")">
+                        @(Loop.IsRunning ? "● RUNNING" : "○ IDLE")
+                    </MudChip>
+                    <MudIconButton Icon="@(_isDark ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                                   Color="Color.Inherit" OnClick="ToggleTheme" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Settings" Href="/settings" Color="Color.Inherit" />
+                </MudAppBar>
+
+                <MudMainContent>
+                    <MudGrid Spacing="3" Class="pa-3" Style="height: calc(100vh - 100px);">
+                        <MudItem xs="3" Class="d-flex flex-column" Style="height:100%; overflow-y:auto;">
+                            <LeftPanel />
+                        </MudItem>
+
+                        <MudItem xs="6" Class="d-flex flex-column" Style="height:100%;">
+                            <CenterPanel />
+                        </MudItem>
+
+                        <MudItem xs="3" Class="d-flex flex-column" Style="height:100%; gap:12px;">
+                            <RightPanel />
+                        </MudItem>
+                    </MudGrid>
+                </MudMainContent>
+
+                <MudPaper Class="pa-2 d-flex align-center gap-4" Elevation="4" Square="true"
+                          Style="position:fixed;bottom:0;left:0;right:0;background:#150e22;border-top:1px solid #2a1f3d;">
+                    <MudText Typo="Typo.caption">Режим: <b>@Session.Mode</b></MudText>
+                    <MudText Typo="Typo.caption">Эпоха: <b>@(Loop.LastStep?.Epoch ?? 0) / @(Loop.IsRunning ? Loop.TargetEpochs : Session.Distill.Epochs)</b></MudText>
+                    <MudSpacer />
+                    <MudText Typo="Typo.caption" Style="color:#64748b;">KNP Sandbox · net10.0</MudText>
+                </MudPaper>
+            </MudLayout>
+        </ChildContent>
+
+        <ErrorContent Context="ex">
+            <MudPaper Class="pa-6 ma-6" Elevation="4" Style="background:#2a0f1f;color:#fecaca;">
+                <MudText Typo="Typo.h6">💥 Ошибка в компоненте</MudText>
+                <MudText Typo="Typo.body2" Class="mt-2">@ex.Message</MudText>
+                <MudButton Class="mt-4" Color="Color.Primary" Variant="Variant.Filled"
+                           OnClick="RecoverFromError">Восстановить</MudButton>
+            </MudPaper>
+        </ErrorContent>
+    </ErrorBoundary>
+</ThemeWrapper>
+
+@code {
+    private ErrorBoundary? _errorBoundary;
+    private bool _isDark => Session.Theme != "light";
+
+    private async Task ToggleTheme()
+    {
+        Session.Theme = _isDark ? "light" : "dark";
+        await Task.Delay(100);
+        await JS.InvokeVoidAsync("eval", "location.reload()");
+    }
+
+    private void RecoverFromError() => _errorBoundary?.Recover();
+    public void Dispose() { }
+}

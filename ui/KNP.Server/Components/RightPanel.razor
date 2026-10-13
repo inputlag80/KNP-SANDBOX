@@ -1,0 +1,115 @@
+@inject KnpSession Session
+@inject TrainingLoop Loop
+@inject StorageService Storage
+@implements IDisposable
+
+<MudPaper Class="pa-3 panel-box" Elevation="2">
+    <MudText Typo="Typo.subtitle2" Class="mb-2">Метрики</MudText>
+    @if (Session.Mode == "distill" && Loop.LastStep is { } ls)
+    {
+        <div>Epoch: <b>@ls.Epoch / @Loop.TargetEpochs</b></div>
+        <div>Прогресс: <b>@(ls.Epoch * 100 / Math.Max(Loop.TargetEpochs, 1))%</b></div>
+        <div>Total loss: <b>@ls.TotalLoss.ToString("F3")</b></div>
+        <div>Soft loss: <b>@ls.SoftLoss.ToString("F3")</b></div>
+        <div>Hard loss: <b>@ls.HardLoss.ToString("F3")</b></div>
+        <div>Accuracy: <b>@(ls.Accuracy*100)%</b></div>
+    }
+    else if (Session.Mode == "quant" && Storage.GetSpec(Session.Quant.Model) is { } sp)
+    {
+        <div>Модель: <b>@Session.Quant.Model</b></div>
+        <div>Параметров: <b>@(sp.Params/1_000_000) M</b></div>
+        <div>Бит: <b>@Session.Quant.Bits</b></div>
+    }
+    else
+    {
+        <MudText Typo="Typo.caption" Color="Color.Default">нет данных</MudText>
+    }
+</MudPaper>
+
+<MudPaper Class="pa-3 flex-grow-1 panel-box" Elevation="2" Style="overflow-y:auto;">
+    <MudText Typo="Typo.subtitle2" Class="mb-2">Лог</MudText>
+    @foreach (var line in Loop.Log.Distinct().Take(30))
+    {
+        var parts = SplitLogLine(line);
+        <div style="font-family: 'Consolas', monospace; font-size: 12px;
+                    padding: 3px 0; border-bottom: 1px solid #1e1530; line-height: 1.4;">
+            <span style="color: #64748b;">@parts.Time</span>
+            @if (parts.Tag.Length > 0)
+            {
+                <span style="color: #a855f7; margin-left: 4px;">@parts.Tag</span>
+            }
+            @if (parts.Message.StartsWith("quantize "))
+            {
+                var m = parts.Message.Substring(9);
+                var arrow = m.IndexOf('→');
+                if (arrow > 0)
+                {
+                    var model = m.Substring(0, arrow).Trim();
+                    var bits = m.Substring(arrow + 1).Trim();
+                    <span style="color: #22d3ee; margin-left: 4px;">quantize</span>
+                    <span style="color: #ec4899; margin-left: 4px;">@model</span>
+                    <span style="color: #64748b; margin-left: 4px;">→</span>
+                    <span style="color: #f59e0b; margin-left: 4px;">@bits</span>
+                }
+                else
+                {
+                    <span style="color: #e4e4e7; margin-left: 4px;">@parts.Message</span>
+                }
+            }
+            else
+            {
+                <span style="color: @parts.Color; margin-left: 4px;">@parts.Message</span>
+            }
+        </div>
+    }
+</MudPaper>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Loop.OnTick += HandleTick;
+        Session.OnChanged += HandleChanged;
+    }
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+private void HandleTick() => InvokeAsync(StateHasChanged);
+
+    private (string Time, string Tag, string Message, string Color) SplitLogLine(string raw)
+    {
+        string time = "";
+        string rest = raw;
+
+        if (raw.StartsWith("[") && raw.IndexOf("] ") is int close && close > 0)
+        {
+            time = raw.Substring(0, close + 1);
+            rest = raw.Substring(close + 2);
+        }
+
+        string tag = "";
+        if (rest.StartsWith("[distill]") || rest.StartsWith("[quant]"))
+        {
+            var end = rest.IndexOf(']');
+            tag = rest.Substring(0, end + 1);
+            rest = rest.Substring(end + 2);
+        }
+
+        var color = rest switch
+        {
+            var m when m.Contains("quantize")  => "#22d3ee",
+            var m when m.Contains("старт")     => "#10b981",
+            var m when m.Contains("завершено") => "#8b5cf6",
+            var m when m.Contains("пауза")     => "#f59e0b",
+            var m when m.Contains("сброс")     => "#a1a1aa",
+            var m when m.Contains("ошиб")      => "#ef4444",
+            _ => "#e4e4e7"
+        };
+
+        return (time, tag, rest, color);
+    }
+
+    public void Dispose()
+    {
+        Loop.OnTick -= HandleTick;
+        Session.OnChanged -= HandleChanged;
+    }
+}

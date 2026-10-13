@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="KNP.Core/KNP.Core.csproj" />
+  <Project Path="KNP.Server/KNP.Server.csproj" />
+</Solution>

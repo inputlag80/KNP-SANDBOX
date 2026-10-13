@@ -1,0 +1,296 @@
+@inject KnpSession Session
+@inject TrainingLoop Loop
+@inject StorageService Storage
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<MudPaper Class="pa-3 panel-box" Elevation="2">
+    <MudToggleGroup T="string" @bind-Value="Session.Mode" Color="Color.Primary"
+                    @bind-Value:after="OnModeChange" Class="mb-3"
+                    Disabled="Loop.IsRunning">
+        <MudToggleItem Value="@("distill")" Text="Дистилляция" />
+        <MudToggleItem Value="@("quant")" Text="Квантирование" />
+    </MudToggleGroup>
+
+    @if (Session.Mode == "distill")
+    {
+        <MudSelect T="string" Label="Teacher" @bind-Value="Session.Distill.Teacher"
+                   @bind-Value:after="Session.Persist" Dense="true" Class="mb-2"
+                   Disabled="Loop.IsRunning">
+            @foreach (var m in Storage.GetModels())
+            {
+                <MudSelectItem Value="@m.Id">@m.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect T="string" Label="Student" @bind-Value="Session.Distill.Student"
+                   @bind-Value:after="Session.Persist" Dense="true" Class="mb-2"
+                   Disabled="Loop.IsRunning">
+            @foreach (var m in Storage.GetModels())
+            {
+                <MudSelectItem Value="@m.Id">@m.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <Row Label="Temperature T"
+             Value="@Session.Distill.Temperature.ToString("F2")"
+             Field="temp"
+             Min="0.1" Max="100" Step="0.5"
+             Disabled="Loop.IsRunning"
+             OnCommit="v => { Session.Distill.Temperature = v; }"
+             CurrentValue="@Session.Distill.Temperature" />
+        @if (!IsEditing("temp"))
+        {
+            <MudSlider T="double" Min="1" Max="10" Step="0.5"
+                       @bind-Value="Session.Distill.Temperature"
+                       @bind-Value:after="Session.Persist" Color="Color.Info"
+                       Disabled="Loop.IsRunning" />
+        }
+
+        <Row Label="Alpha"
+             Value="@Session.Distill.Alpha.ToString("F2")"
+             Field="alpha"
+             Min="0" Max="1" Step="0.05"
+             Disabled="Loop.IsRunning"
+             OnCommit="v => { Session.Distill.Alpha = v; }"
+             CurrentValue="@Session.Distill.Alpha" />
+        @if (!IsEditing("alpha"))
+        {
+            <MudSlider T="double" Min="0" Max="1" Step="0.05"
+                       @bind-Value="Session.Distill.Alpha"
+                       @bind-Value:after="Session.Persist" Color="Color.Info"
+                       Disabled="Loop.IsRunning" />
+        }
+
+        <Row Label="Learning rate"
+             Value="@Session.Distill.Lr.ToString("F2")"
+             Field="lr"
+             Min="0.01" Max="10" Step="0.1"
+             Disabled="Loop.IsRunning"
+             OnCommit="v => { Session.Distill.Lr = v; }"
+             CurrentValue="@Session.Distill.Lr" />
+        @if (!IsEditing("lr"))
+        {
+            <MudSlider T="double" Min="0.1" Max="5" Step="0.1"
+                       @bind-Value="Session.Distill.Lr"
+                       @bind-Value:after="Session.Persist" Color="Color.Info"
+                       Disabled="Loop.IsRunning" />
+        }
+
+        <Row Label="Эпох"
+             Value="@Session.Distill.Epochs.ToString()"
+             Field="epochs"
+             Min="1" Max="500" Step="1"
+             Disabled="Loop.IsRunning"
+             OnCommit="v => { Session.Distill.Epochs = (int)Math.Round(v); }"
+             CurrentValue="@Session.Distill.Epochs" />
+        @if (!IsEditing("epochs"))
+        {
+            <MudSlider T="int" Min="5" Max="60" Step="5"
+                       @bind-Value="Session.Distill.Epochs"
+                       @bind-Value:after="Session.Persist" Color="Color.Info"
+                       Disabled="Loop.IsRunning" />
+        }
+    }
+    else
+    {
+        <MudSelect T="string" Label="Модель" @bind-Value="Session.Quant.Model"
+                   @bind-Value:after="Session.Persist" Dense="true" Class="mb-2"
+                   Disabled="Loop.IsRunning">
+            @foreach (var m in Storage.GetModels())
+            {
+                <MudSelectItem Value="@m.Id">@m.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <div class="d-flex justify-space-between">
+            <MudText Typo="Typo.caption" Style="color:#e4e4e7;">Битность</MudText>
+            <MudText Typo="Typo.caption" Color="Color.Info">@Session.Quant.Bits</MudText>
+        </div>
+        <MudSlider T="int" Min="2" Max="32" Step="1"
+                   @bind-Value="Session.Quant.Bits"
+                   @bind-Value:after="OnBitsChange" Color="Color.Success"
+                   Disabled="Loop.IsRunning" />
+
+        <div class="d-flex gap-1 flex-wrap mt-2">
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Disabled="Loop.IsRunning" OnClick="@(() => SetBits(32))">FP32</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Disabled="Loop.IsRunning" OnClick="@(() => SetBits(16))">FP16</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Disabled="Loop.IsRunning" OnClick="@(() => SetBits(8))">INT8</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Disabled="Loop.IsRunning" OnClick="@(() => SetBits(4))">INT4</MudButton>
+            <MudButton Size="Size.Small" Variant="Variant.Outlined" Disabled="Loop.IsRunning" OnClick="@(() => SetBits(2))">INT2</MudButton>
+        </div>
+    }
+
+    <MudDivider Class="my-3" />
+
+    <div class="d-flex gap-2">
+        @if (Session.Mode == "distill")
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" FullWidth="true"
+                       OnClick="OnStart" Disabled="Loop.IsRunning">▶ Старт</MudButton>
+            <MudButton Color="Color.Warning" Variant="Variant.Outlined"
+                       OnClick="OnPause" Disabled="!Loop.IsRunning">⏸</MudButton>
+        }
+        <MudButton Color="Color.Error" Variant="Variant.Outlined"
+                   OnClick="OnReset">↻</MudButton>
+        <MudButton Color="Color.Default" Variant="Variant.Outlined"
+                   OnClick="OnResetSettings" title="Сброс настроек">⚙↻</MudButton>
+    </div>
+</MudPaper>
+
+<MudPaper Class="pa-3 panel-box mt-3" Elevation="2">
+    <div class="d-flex align-center justify-space-between mb-2">
+        <MudText Typo="Typo.subtitle2">История</MudText>
+        <div class="d-flex">
+    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small"
+                   Color="Color.Default" OnClick="ClearHistory" />
+</div>
+    </div>
+
+    @if (_history.Count == 0)
+    {
+        <MudText Typo="Typo.caption" Style="color:#a1a1aa;">Пока пусто</MudText>
+    }
+    else
+    {
+        @foreach (var h in _history.Take(5))
+        {
+            <div style="border-left:3px solid #a855f7; padding:6px 8px; margin-bottom:6px;
+                        background:#0f0a1a; border-radius:6px;">
+                <div style="font-size:11px; color:#d4d4d8;">@h.Timestamp.ToLocalTime().ToString("HH:mm:ss")</div>
+                <div style="font-size:12px; color:#ec4899; font-weight:600;">@h.Model</div>
+                <div style="font-size:11px; color:#d4d4d8;">@h.Summary</div>
+            </div>
+        }
+    }
+</MudPaper>
+
+@code {
+    private string? _editingField;
+    private string _draft = "";
+    private List<KNP.Core.Storage.HistoryEntry> _history = new();
+
+    private bool IsEditing(string field) => _editingField == field;
+
+    private void StartEdit(string field)
+    {
+        if (Loop.IsRunning) return;
+        _editingField = field;
+        _draft = ""; // пустое поле
+    }
+
+    private void CancelEdit()
+    {
+        _editingField = null;
+        _draft = "";
+    }
+
+    private void CommitEdit(double min, double max, Action<double> apply)
+    {
+        if (string.IsNullOrWhiteSpace(_draft))
+        {
+            CancelEdit();
+            return;
+        }
+        var normalized = _draft.Replace(',', '.');
+        if (double.TryParse(normalized,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var v))
+        {
+            v = Math.Clamp(v, min, max);
+            apply(v);
+            Session.Persist();
+        }
+        CancelEdit();
+    }
+
+    protected override void OnInitialized()
+{
+    ReloadHistory();
+    Session.OnChanged += HandleChanged;
+    Loop.OnTick += HandleTick;
+    Loop.OnFinished += OnTrainingFinished;
+}
+
+private void OnTrainingFinished()
+{
+    // автосохранение по завершении обучения
+    try
+    {
+        var entry = new KNP.Core.Storage.HistoryEntry
+        {
+            Mode = Session.Mode,
+            Model = Session.Mode == "distill"
+                ? $"{Session.Distill.Teacher} → {Session.Distill.Student}"
+                : Session.Quant.Model,
+            Summary = $"epochs={Loop.LastStep?.Epoch ?? 0}, loss={Loop.LastStep?.TotalLoss:F3}",
+            Metrics = Loop.LastStep is { } ls
+                ? new() { ["total_loss"] = ls.TotalLoss, ["accuracy"] = ls.Accuracy }
+                : new()
+        };
+        Storage.AppendHistory(entry);
+        ReloadHistory();
+        Snackbar.Add($"✓ Записано в историю: {entry.Model}", Severity.Success);
+        InvokeAsync(StateHasChanged);
+    }
+    catch (Exception ex)
+    {
+        Snackbar.Add($"✗ История: {ex.Message}", Severity.Error);
+    }
+}
+
+    private void HandleChanged() { InvokeAsync(StateHasChanged); }
+    private void HandleTick()    { InvokeAsync(StateHasChanged); }
+
+    private void OnModeChange()
+    {
+        Session.Persist();
+        Loop.Reset();
+        if (Session.Mode == "quant") Loop.RecomputeQuant();
+    }
+
+    private void OnBitsChange()
+    {
+        Session.Persist();
+        Loop.RecomputeQuant();
+    }
+
+    private void SetBits(int b)
+    {
+        Session.Quant.Bits = b;
+        Session.Persist();
+        Loop.RecomputeQuant();
+    }
+
+    private void OnStart()
+    {
+        if (Session.Mode == "quant") { Loop.RecomputeQuant(); return; }
+        if (Loop.LastStep is { } last && last.Epoch >= Loop.TargetEpochs) Loop.Reset();
+        Loop.Start();
+    }
+
+    private void OnPause() => Loop.Pause();
+    private void OnReset() => Loop.Reset();
+
+    private void OnResetSettings()
+{
+    Session.Reset();
+    Snackbar.Add("✓ Настройки сброшены к дефолту", Severity.Success);
+}
+
+public void Dispose()
+{
+    Session.OnChanged -= HandleChanged;
+    Loop.OnTick -= HandleTick;
+    Loop.OnFinished -= OnTrainingFinished;
+}
+
+    private void ClearHistory()
+    {
+        Storage.ClearHistory();
+        _history.Clear();
+        Snackbar.Add("История очищена", Severity.Info);
+    }
+
+    private void ReloadHistory() => _history = Storage.LoadHistory().Runs.ToList();
+}

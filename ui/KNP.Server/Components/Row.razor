@@ -1,0 +1,97 @@
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Field { get; set; } = "";
+    [Parameter] public double Min { get; set; }
+    [Parameter] public double Max { get; set; }
+    [Parameter] public double Step { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public double CurrentValue { get; set; }
+    [Parameter] public Action<double> OnCommit { get; set; } = _ => { };
+}
+
+<div class="d-flex justify-space-between align-center" style="margin-bottom:2px;">
+    <span style="color:#e4e4e7; font-size:12px;">@Label</span>
+
+    @if (_editing)
+    {
+        <input type="text"
+               @bind="_draft"
+               @bind:event="oninput"
+               @onkeydown="OnKeyDown"
+               @onblur="Commit"
+               @ref="_inputRef"
+               style="width:80px; background:transparent;
+                      border:none; border-bottom:1px solid #a855f7;
+                      color:#22d3ee; font-weight:600; text-align:right;
+                      outline:none; font-family:inherit; font-size:13px; padding:2px 0;" />
+    }
+    else
+    {
+        <span style="cursor:pointer; color:#22d3ee; font-weight:600; font-size:13px;
+                     padding:2px 4px; border-radius:4px;"
+              @onmousedown="StartEdit"
+              @onmousedown:preventDefault="true">
+            @Value ✎
+        </span>
+    }
+</div>
+
+@code {
+    private bool _editing;
+    private string _draft = "";
+    private ElementReference _inputRef;
+    private bool _justStarted;
+
+    private void StartEdit()
+    {
+        if (Disabled) return;
+        _editing = true;
+        _draft = "";
+        _justStarted = true;
+    }
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            Commit();
+        }
+        else if (e.Key == "Escape")
+        {
+            _editing = false;
+            _draft = "";
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_editing && _justStarted)
+        {
+            _justStarted = false;
+            try { await _inputRef.FocusAsync(); } catch { }
+        }
+    }
+
+    private void Commit()
+    {
+        if (!_editing) return;
+        _editing = false;
+
+        if (string.IsNullOrWhiteSpace(_draft))
+        {
+            _draft = "";
+            return;
+        }
+
+        var normalized = _draft.Replace(',', '.');
+        if (double.TryParse(normalized,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out var v))
+        {
+            v = Math.Clamp(v, Min, Max);
+            OnCommit(v);
+        }
+        _draft = "";
+    }
+}

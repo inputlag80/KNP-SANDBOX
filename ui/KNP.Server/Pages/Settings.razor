@@ -1,0 +1,165 @@
+@page "/settings"
+@rendermode InteractiveServer
+@inject KnpSession Session
+@inject StorageService Storage
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<ThemeWrapper>
+    <MudLayout>
+        <MudAppBar Elevation="0" Color="Color.Dark" Dense="true">
+            <MudIconButton Icon="@Icons.Material.Filled.ArrowBack" Color="Color.Inherit" Href="/" />
+            <MudText Typo="Typo.h6">Настройки</MudText>
+        </MudAppBar>
+
+        <MudMainContent>
+            <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+
+                <MudPaper Class="pa-4 mb-4" Elevation="2" Style="border:1px solid #2a1f3d;">
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">🎨 Оформление</MudText>
+
+                    <MudText Typo="Typo.caption" Class="mb-2">Палитра</MudText>
+                    <div class="d-flex gap-2 flex-wrap mb-4">
+                        @foreach (var (id, name, color) in new[]
+                        {
+                            ("purple", "Фиолетовая", "#a855f7"),
+                            ("blue",   "Синяя",      "#3b82f6"),
+                            ("green",  "Зелёная",    "#10b981"),
+                            ("pink",   "Розовая",    "#ec4899"),
+                        })
+                        {
+                            <div @onclick="@(() => SetAccent(id))"
+                                 style="cursor:pointer; padding:8px 14px; border-radius:10px;
+                                        border:2px solid @(Session.Accent == id ? color : "transparent");
+                                        background:@(color)22; font-size:12px;">
+                                <span style="display:inline-block; width:10px; height:10px; border-radius:50%;
+                                             background:@color; margin-right:6px;"></span>@name
+                            </div>
+                        }
+                    </div>
+
+                    <MudText Typo="Typo.caption" Class="mb-2">Тема</MudText>
+                    <div class="d-flex gap-2">
+                        <MudButton Variant="@(Session.Theme == "dark" ? Variant.Filled : Variant.Outlined)"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => SetTheme("dark"))">🌙 Тёмная</MudButton>
+                        <MudButton Variant="@(Session.Theme == "light" ? Variant.Filled : Variant.Outlined)"
+                                   Color="Color.Primary" Size="Size.Small"
+                                   OnClick="@(() => SetTheme("light"))">☀️ Светлая</MudButton>
+                    </div>
+                </MudPaper>
+
+                <MudPaper Class="pa-4 mb-4" Elevation="2" Style="border:1px solid #2a1f3d;">
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">Состояние</MudText>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <MudButton Color="Color.Warning" Variant="Variant.Outlined" OnClick="ResetSession">
+                            Сбросить состояние
+                        </MudButton>
+                        <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="ClearHistory">
+                            Очистить историю
+                        </MudButton>
+                    </div>
+                </MudPaper>
+
+                <MudPaper Class="pa-4 mb-4" Elevation="2" Style="border:1px solid #2a1f3d;">
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">Доступные модели</MudText>
+                    <MudSimpleTable Dense="true">
+                        <thead>
+                            <tr><th>id</th><th>Название</th><th>Заметка</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in Storage.GetModels())
+                            {
+                                <tr><td>@m.Id</td><td>@m.Name</td><td>@m.Note</td></tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+
+                <MudPaper Class="pa-4 mb-4" Elevation="2" Style="border:1px solid #2a1f3d;">
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">Информация</MudText>
+                    <MudText Typo="Typo.body2">Ядро: KNP.Server / KNP.Core (net10.0)</MudText>
+                    <MudText Typo="Typo.body2">Flask-фасад: 127.0.0.1:5000</MudText>
+                    <MudText Typo="Typo.body2">C#-сервер: 127.0.0.1:5001</MudText>
+                </MudPaper>
+
+                <MudPaper Class="pa-4" Elevation="2" Style="border:1px solid #2a1f3d;">
+                    <MudText Typo="Typo.subtitle1" Class="mb-3">🔧 Режим разработчика</MudText>
+
+                    @if (!Session.DevMode)
+                    {
+                        <MudText Typo="Typo.body2" Class="mb-2" Style="color:#a1a1aa;">
+                            Введите пароль для активации
+                        </MudText>
+                        <div class="d-flex gap-2">
+                            <MudTextField T="string" @bind-Value="_devPassword" Label="Пароль"
+                                          Variant="Variant.Outlined"
+                                          InputType="InputType.Password" />
+                            <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                                       OnClick="TryEnableDev">Войти</MudButton>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mb-3">
+                            Dev-режим активен. Здесь будут функции редактирования моделей.
+                        </MudAlert>
+                        <MudButton Color="Color.Error" Variant="Variant.Outlined"
+                                   OnClick="DisableDev">Выключить dev-режим</MudButton>
+                    }
+                </MudPaper>
+
+            </MudContainer>
+        </MudMainContent>
+    </MudLayout>
+</ThemeWrapper>
+
+@code {
+    private string _devPassword = "";
+
+    private async Task SetAccent(string id)
+    {
+        Session.Accent = id;
+        await Task.Delay(100);
+        await JS.InvokeVoidAsync("eval", "location.reload()");
+    }
+
+    private async Task SetTheme(string t)
+    {
+        Session.Theme = t;
+        await Task.Delay(100);
+        await JS.InvokeVoidAsync("eval", "location.reload()");
+    }
+
+    private void ResetSession()
+    {
+        Session.Reset();
+        Snackbar.Add("✓ Состояние сброшено", Severity.Success);
+    }
+
+    private void ClearHistory()
+    {
+        Storage.ClearHistory();
+        Snackbar.Add("✓ История очищена", Severity.Info);
+    }
+
+    private void TryEnableDev()
+    {
+        if (_devPassword == "1234")
+        {
+            Session.DevMode = true;
+            _devPassword = "";
+            Snackbar.Add("🔧 Dev-режим включён", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("✗ Неверный пароль", Severity.Error);
+        }
+    }
+
+    private void DisableDev()
+    {
+        Session.DevMode = false;
+        Snackbar.Add("Dev-режим выключен", Severity.Info);
+    }
+}

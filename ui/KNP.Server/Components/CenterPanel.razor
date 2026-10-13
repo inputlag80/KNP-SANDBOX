@@ -1,0 +1,85 @@
+@inject KnpSession Session
+@inject TrainingLoop Loop
+@inject StorageService Storage
+@implements IDisposable
+
+<MudPaper Class="pa-4 flex-grow-1 d-flex flex-column panel-box" Elevation="2">
+    @if (Session.Mode == "distill")
+    {
+        <MudText Typo="Typo.subtitle2" Class="mb-3">Распределения (игрушечный словарь)</MudText>
+        @if (Loop.LastStep is { } ls)
+        {
+            var vocab = new[] { "the","cat","sat","on","a","mat","and","dog","ran","fast" };
+            var tArr = ls.TeacherSoft;
+            var sArr = ls.StudentSoft;
+            var n = Math.Min(vocab.Length, Math.Min(tArr.Length, sArr.Length));
+            @for (int i = 0; i < n; i++)
+            {
+                var word = vocab[i];
+                var t = tArr[i];
+                var s = sArr[i];
+                var tPct = t * 100;
+                var sPct = s * 100;
+                var tStr = t.ToString("F3");
+                var sStr = s.ToString("F3");
+                <div class="d-flex align-center gap-2 my-1">
+                    <MudText Typo="Typo.caption" Style="width:40px">@word</MudText>
+                    <MudProgressLinear Color="Color.Info" Size="Size.Small"
+                                       Value="@tPct" Style="flex:1" />
+                    <MudText Typo="Typo.caption" Style="width:60px;text-align:right">@tStr</MudText>
+                    <MudProgressLinear Color="Color.Success" Size="Size.Small"
+                                       Value="@sPct" Style="flex:1" />
+                    <MudText Typo="Typo.caption" Style="width:60px;text-align:right">@sStr</MudText>
+                </div>
+            }
+        }
+        else
+        {
+            <MudText Color="Color.Default">Нажми «Старт», чтобы увидеть динамику распределений.</MudText>
+        }
+    }
+    else
+    {
+        <MudText Typo="Typo.subtitle2" Class="mb-3">Размер модели</MudText>
+        @if (Loop.QuantizedWeights is not null && Storage.GetSpec(Session.Quant.Model) is { } spec)
+        {
+            var origMb = spec.Fp32Mb;
+            var qMb = (long)Math.Round(spec.Params * Session.Quant.Bits / 8.0 / 1_000_000);
+            var ratio = qMb > 0 ? (double)origMb / qMb : 0;
+            var ppl = KNP.Core.Quantization.PerplexityModel.Estimate(spec.BasePpl, Session.Quant.Bits);
+
+            <MudText Typo="Typo.body2">FP32: @origMb MB</MudText>
+            <MudProgressLinear Color="Color.Info" Value="100" Class="mb-2" />
+            <MudText Typo="Typo.body2">Квант (@Session.Quant.Bits bit): @qMb MB</MudText>
+            <MudProgressLinear Color="Color.Success" Value="@((double)qMb/Math.Max(origMb,1)*100)" Class="mb-4" />
+
+            <MudSimpleTable Dense="true" Elevation="0">
+                <tbody>
+                    <tr><td>Сжатие</td><td><b>@ratio.ToString("F2")×</b></td></tr>
+                    <tr><td>Perplexity (оценка)</td><td><b>@ppl.ToString("F2")</b></td></tr>
+                </tbody>
+            </MudSimpleTable>
+        }
+        else
+        {
+            <MudText Color="Color.Default">Крути ползунок битности, чтобы увидеть эффект.</MudText>
+        }
+    }
+</MudPaper>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Loop.OnTick += HandleTick;
+        Session.OnChanged += HandleChanged;
+    }
+
+    private void HandleChanged() => InvokeAsync(StateHasChanged);
+private void HandleTick() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Loop.OnTick -= HandleTick;
+        Session.OnChanged -= HandleChanged;
+    }
+}

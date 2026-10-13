@@ -21,7 +21,7 @@ class CoreProcess:
         on_log(f"[core] запускаю dotnet run в {project_dir}")
         env = os.environ.copy()
         env["ASPNETCORE_URLS"] = self.base_url
-        env["ASPNETCORE_ENVIRONMENT"] = "Production"
+        env["ASPNETCORE_ENVIRONMENT"] = "Development"
 
         creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
 

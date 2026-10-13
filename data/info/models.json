@@ -1,0 +1,24 @@
+{
+  "models": [
+    { "id": "gpt2",         "name": "GPT-2 (124M)",        "note": "Лёгкий student, классика дистилляции" },
+    { "id": "gpt2-medium",  "name": "GPT-2 Medium (355M)", "note": "Универсальный student/teacher" },
+    { "id": "gpt2-large",   "name": "GPT-2 Large (774M)",  "note": "Хороший teacher для маленьких student" },
+    { "id": "gpt2-xl",      "name": "GPT-2 XL (1.5B)",     "note": "Сильный teacher" },
+    { "id": "distilbert",   "name": "DistilBERT (66M)",    "note": "Самый маленький student" },
+    { "id": "bert-base",    "name": "BERT-base (110M)",    "note": "Энкодер, средний student" },
+    { "id": "bert-large",   "name": "BERT-large (340M)",   "note": "Сильный teacher-энкодер" },
+    { "id": "roberta-base", "name": "RoBERTa-base (125M)", "note": "Улучшенный BERT" },
+    { "id": "opt-1.3b",     "name": "OPT-1.3B",            "note": "Средний student" },
+    { "id": "qwen2-0.5b",   "name": "Qwen2-0.5B",          "note": "Современный лёгкий student" },
+    { "id": "qwen2-1.5b",   "name": "Qwen2-1.5B",          "note": "Хороший баланс" },
+    { "id": "phi-2",        "name": "Phi-2 (2.7B)",        "note": "Плотный teacher" },
+    { "id": "phi-3-mini",   "name": "Phi-3-mini (3.8B)",   "note": "Сильный teacher" },
+    { "id": "tinyllama",    "name": "TinyLlama-1.1B",      "note": "Лёгкий современный student" },
+    { "id": "gemma-2b",     "name": "Gemma-2B",            "note": "Компактный teacher" },
+    { "id": "llama-7b",     "name": "Llama-2-7B",          "note": "Тяжёлый teacher" },
+    { "id": "llama-13b",    "name": "Llama-2-13B",         "note": "Очень тяжёлый teacher" },
+    { "id": "mistral-7b",   "name": "Mistral-7B",          "note": "Современный teacher" },
+    { "id": "gemma-7b",     "name": "Gemma-7B",            "note": "Крупный teacher" },
+    { "id": "falcon-7b",    "name": "Falcon-7B",           "note": "Альтернативный teacher" }
+  ]
+}

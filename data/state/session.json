@@ -1,0 +1,18 @@
+{
+  "mode": "distill",
+  "distill": {
+    "teacher": "gpt2-large",
+    "student": "gpt2",
+    "temperature": 4,
+    "alpha": 0.7,
+    "lr": 1,
+    "epochs": 30
+  },
+  "quant": {
+    "model": "llama-7b",
+    "bits": 8
+  },
+  "theme": "dark",
+  "accent": "green",
+  "dev_mode": false
+}

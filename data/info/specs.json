@@ -1,0 +1,24 @@
+{
+  "specs": {
+    "gpt2":         { "params": 124000000,  "base_ppl": 29.4, "fp32_mb": 496 },
+    "gpt2-medium":  { "params": 355000000,  "base_ppl": 22.1, "fp32_mb": 1420 },
+    "gpt2-large":   { "params": 774000000,  "base_ppl": 18.7, "fp32_mb": 3096 },
+    "gpt2-xl":      { "params": 1500000000, "base_ppl": 17.5, "fp32_mb": 6000 },
+    "distilbert":   { "params": 66000000,   "base_ppl": 14.2, "fp32_mb": 264 },
+    "bert-base":    { "params": 110000000,  "base_ppl": 12.3, "fp32_mb": 440 },
+    "bert-large":   { "params": 340000000,  "base_ppl": 10.8, "fp32_mb": 1360 },
+    "roberta-base": { "params": 125000000,  "base_ppl": 11.8, "fp32_mb": 500 },
+    "opt-1.3b":     { "params": 1300000000, "base_ppl": 14.5, "fp32_mb": 5200 },
+    "qwen2-0.5b":   { "params": 500000000,  "base_ppl": 12.5, "fp32_mb": 2000 },
+    "qwen2-1.5b":   { "params": 1500000000, "base_ppl": 9.8,  "fp32_mb": 6000 },
+    "phi-2":        { "params": 2700000000, "base_ppl": 8.1,  "fp32_mb": 10800 },
+    "phi-3-mini":   { "params": 3800000000, "base_ppl": 6.8,  "fp32_mb": 15200 },
+    "tinyllama":    { "params": 1100000000, "base_ppl": 8.9,  "fp32_mb": 4400 },
+    "gemma-2b":     { "params": 2500000000, "base_ppl": 8.5,  "fp32_mb": 10000 },
+    "llama-7b":     { "params": 6700000000, "base_ppl": 5.7,  "fp32_mb": 26800 },
+    "llama-13b":    { "params": 13000000000,"base_ppl": 5.1,  "fp32_mb": 52000 },
+    "mistral-7b":   { "params": 7200000000, "base_ppl": 5.2,  "fp32_mb": 28800 },
+    "gemma-7b":     { "params": 8500000000, "base_ppl": 6.2,  "fp32_mb": 34000 },
+    "falcon-7b":    { "params": 7000000000, "base_ppl": 6.0,  "fp32_mb": 28000 }
+  }
+}
